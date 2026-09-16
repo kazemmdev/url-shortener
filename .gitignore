@@ -1,0 +1,14 @@
+*.DS_Store
+*.idea
+*.cursor
+*.vscode
+*.claude
+
+*.env
+**/Logs/
+*.DotSettings.user
+openiddict.pfx
+
+# Kubernetes secrets (use secrets.example.yaml + create-secrets.sh)
+infra/*/k8s/secrets.yaml
+infra/*/k8s/**/secrets.yaml
