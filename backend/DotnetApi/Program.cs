@@ -1,6 +1,10 @@
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+
+
+var connection = builder.Configuration.GetConnectionString("Default");
+
+
+var app = builder.Build();
 
 app.Run();
