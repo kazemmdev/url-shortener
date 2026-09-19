@@ -1,4 +1,6 @@
 
+up: infra api-dotnet
+
 infra:
 	docker compose up -d sqlserver redis
 
