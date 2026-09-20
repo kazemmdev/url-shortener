@@ -24,7 +24,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 1G
   
   redis:
     image: redis:7.0-alpine3.17
@@ -33,6 +33,27 @@ services:
     ports:  
       - "${REDIS_PORT:-6379}:6379"
 
+  api:
+    build:
+      context: ./backend/DotnetApi
+    container_name: url-shortener-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=UrlShortener;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      App__ApplyMigrations: "true"
+      # EF logs every SQL command at Information; console logging would skew the load test
+      Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "${API_CPUS:-1}"
+          memory: ${API_MEMORY:-512M}
 
 volumes:
   sqlserver-data:
