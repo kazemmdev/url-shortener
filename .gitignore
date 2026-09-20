@@ -12,3 +12,5 @@ openiddict.pfx
 # Kubernetes secrets (use secrets.example.yaml + create-secrets.sh)
 infra/*/k8s/secrets.yaml
 infra/*/k8s/**/secrets.yaml
+# k6 load test output
+loadtest/results/

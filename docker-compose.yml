@@ -55,6 +55,17 @@ services:
           cpus: "${API_CPUS:-1}"
           memory: ${API_MEMORY:-512M}
 
+  k6:
+    image: grafana/k6:latest
+    profiles: ["loadtest"]
+    environment:
+      BASE_URL: http://api:8080
+    volumes:
+      - ./loadtest:/scripts:ro
+      - ./loadtest/results:/results
+    depends_on:
+      - api
+
 volumes:
   sqlserver-data:
     driver: local
