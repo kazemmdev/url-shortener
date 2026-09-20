@@ -49,6 +49,15 @@ func main() {
 	}
 	defer db.Close()
 
+	// database/sql defaults to unlimited open connections but only 2 kept
+	// idle, so under concurrent load it was opening a fresh TCP+auth
+	// connection to SQL Server per request instead of reusing a pool. Cap it
+	// at 100, matching ADO.NET SqlClient's default Max Pool Size, so this
+	// isn't an artificially different limit from the .NET side.
+	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(100)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
