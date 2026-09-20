@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 public class UrlService(AppDbContext db, IConfiguration configuration) : IUrlService
 {
-    private const string Alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+    private const string Alphabet = "0123456789abcde";
     private const int ShortCodeLength = 3;
 
     // private const string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
