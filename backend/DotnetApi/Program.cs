@@ -1,12 +1,18 @@
 using DotnetApi.Data;
 using DotnetApi.Services;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connection = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(
+        builder.Configuration.GetConnectionString("Redis")!
+));
 
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(connection));
+builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(
+    builder.Configuration.GetConnectionString("Default")
+));
+
 builder.Services.AddScoped<IUrlService, UrlService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
