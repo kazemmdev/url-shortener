@@ -26,7 +26,7 @@ public class UrlService(AppDbContext db, IConfiguration configuration, IConnecti
 
         var expiration = url.ExpiresAt - DateTime.UtcNow;
 
-        await cache.StringSetAsync(shortCode, url.LongUrl, expiration);
+        await cache.StringSetAsync(shortCode, url.LongUrl);
 
         return url.LongUrl;
     }
