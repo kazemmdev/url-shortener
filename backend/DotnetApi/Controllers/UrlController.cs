@@ -1,6 +1,5 @@
 namespace DotnetApi.Controllers;
 
-
 using DotnetApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,15 +18,7 @@ public class UrlController(IUrlService service): ControllerBase
     public async Task<IActionResult> GetByShortCode(string shortCode)
     {
         var longUrl = await service.GetByShortCode(shortCode);
-        if (longUrl == null)
-        {
-            return NotFound();
-        }
-        return Redirect(longUrl);
+        return longUrl == null ? NotFound() : Redirect(longUrl);
     }
 }
 
-public class UrlRequest
-{
-    public required string LongUrl { get; set; }
-}

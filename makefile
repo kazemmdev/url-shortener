@@ -14,7 +14,7 @@ api-docker:
 
 # Load test with k6: make loadtest PROFILE=stress K6_ARGS="-e TARGET_RPS=5000"
 PROFILE ?= stress
-K6_ARGS ?= -e TARGET_RPS=5000
+K6_ARGS ?= -e TARGET_RPS=50000
 
 loadtest:
 	docker compose up -d --force-recreate api && MSYS_NO_PATHCONV=1 docker compose --profile loadtest run --rm k6 run -e PROFILE=$(PROFILE) $(K6_ARGS) --summary-export=/results/summary-$(PROFILE).json /scripts/url-shortener.js
