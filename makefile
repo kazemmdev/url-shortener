@@ -13,11 +13,11 @@ api-docker:
 	docker compose up -d --build api
 
 # Load test with k6: make loadtest PROFILE=stress K6_ARGS="-e TARGET_RPS=5000"
-PROFILE ?= load
-K6_ARGS ?=
+PROFILE ?= stress
+K6_ARGS ?= -e TARGET_RPS=5000
 
 loadtest:
-	 docker compose up -d --force-recreate api && docker compose --profile loadtest run --rm k6 run -e PROFILE=$(PROFILE) $(K6_ARGS) --summary-export=/results/summary-$(PROFILE).json /scripts/url-shortener.js
+	docker compose up -d --force-recreate api && MSYS_NO_PATHCONV=1 docker compose --profile loadtest run --rm k6 run -e PROFILE=$(PROFILE) $(K6_ARGS) --summary-export=/results/summary-$(PROFILE).json /scripts/url-shortener.js
 
 # Watch CPU / memory of the API and database while a test runs
 stats:
