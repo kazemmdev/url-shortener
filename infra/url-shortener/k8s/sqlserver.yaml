@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlserver-data
+  namespace: url-shortener
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqlserver
+  namespace: url-shortener
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: sqlserver }
+  template:
+    metadata:
+      labels: { app: sqlserver }
+    spec:
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/mssql/server:2025-latest
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_PID
+              value: "Developer"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: url-shortener-secrets, key: MSSQL_SA_PASSWORD }
+          ports:
+            - containerPort: 1433
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/mssql
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              memory: "2Gi"
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1'
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1'
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: sqlserver-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlserver
+  namespace: url-shortener
+spec:
+  selector: { app: sqlserver }
+  ports:
+    - port: 1433
+      targetPort: 1433

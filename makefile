@@ -1,4 +1,4 @@
-.PHONY: up infra api-dotnet api-docker loadtest stats
+.PHONY: up infra api-dotnet api-docker loadtest stats k8s-up k8s-api k8s-loadtest k8s-stats k8s-down
 
 up: infra api-docker
 
@@ -22,3 +22,27 @@ loadtest:
 # Watch CPU / memory of the API and database while a test runs
 stats:
 	docker stats url-shortener-api sqlserver
+
+# --- Kubernetes (infra/url-shortener/k8s): same experiment, real CFS-quota throttling ---
+K8S_DIR := infra/url-shortener/k8s
+
+# First-time (or full reset): namespace, secrets, sqlserver, redis
+k8s-up:
+	$(K8S_DIR)/create-secrets.sh
+	kubectl apply -k $(K8S_DIR)
+	kubectl -n url-shortener rollout status deployment/sqlserver
+
+# Build + (re)deploy the API with a resource ceiling: make k8s-api API_CPUS=0.5 API_MEMORY=512Mi
+k8s-api:
+	$(K8S_DIR)/deploy-api.sh
+
+# Load test with k6 as an in-cluster Job: make k8s-loadtest PROFILE=stress TARGET_RPS=3000
+k8s-loadtest:
+	$(K8S_DIR)/run-loadtest.sh
+
+# Watch CPU / memory of the pods while a test runs (needs metrics-server, see k8s README)
+k8s-stats:
+	watch kubectl -n url-shortener top pod
+
+k8s-down:
+	kubectl delete namespace url-shortener --ignore-not-found
