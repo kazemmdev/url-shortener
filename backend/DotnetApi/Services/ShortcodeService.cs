@@ -44,11 +44,6 @@ public static class ShortcodeService
 
     private static string ToBase62(long value)
     {
-        if (value == 0)
-        {
-            return "0";
-        }
-
         Span<char> buffer = stackalloc char[ShortCodeLength];
         var position = buffer.Length;
 
@@ -58,6 +53,12 @@ public static class ShortcodeService
             value /= 62;
         }
 
-        return new string(buffer[position..]);
+        // Left-pad with '0' so the code is always exactly ShortCodeLength chars.
+        while (position > 0)
+        {
+            buffer[--position] = Alphabet[0];
+        }
+
+        return new string(buffer);
     }
 }
