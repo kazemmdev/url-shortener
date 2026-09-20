@@ -14,6 +14,12 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+if (builder.Configuration.GetValue<bool>("App:ApplyMigrations"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 if (builder.Configuration.GetValue<bool>("App:EnableSwagger"))
 {
     app.UseSwagger();
