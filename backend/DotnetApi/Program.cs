@@ -1,5 +1,6 @@
 using DotnetApi.Data;
 using DotnetApi.Services;
+using EFCore.NamingConventions;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
@@ -9,9 +10,10 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Conn
         builder.Configuration.GetConnectionString("Redis")!
 ));
 
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(
-    builder.Configuration.GetConnectionString("Default")
-));
+builder.Services.AddDbContext<AppDbContext>(opt => opt
+    .UseSqlServer(builder.Configuration.GetConnectionString("Default"))
+    .UseSnakeCaseNamingConvention()
+);
 
 builder.Services.AddScoped<IUrlService, UrlService>();
 builder.Services.AddControllers();

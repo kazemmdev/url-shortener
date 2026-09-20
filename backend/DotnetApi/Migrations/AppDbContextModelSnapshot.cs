@@ -25,21 +25,26 @@ namespace DotnetApi.Migrations
             modelBuilder.Entity("DotnetApi.Models.Url", b =>
                 {
                     b.Property<string>("ShortCode")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("short_code");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("expires_at");
 
                     b.Property<string>("LongUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("long_url");
 
-                    b.HasKey("ShortCode");
+                    b.HasKey("ShortCode")
+                        .HasName("pk_urls");
 
-                    b.ToTable("Urls");
+                    b.ToTable("urls", (string)null);
                 });
 #pragma warning restore 612, 618
         }

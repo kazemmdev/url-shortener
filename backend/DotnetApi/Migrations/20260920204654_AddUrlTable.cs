@@ -12,17 +12,17 @@ namespace DotnetApi.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Urls",
+                name: "urls",
                 columns: table => new
                 {
-                    ShortCode = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    LongUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    short_code = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    long_url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    expires_at = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Urls", x => x.ShortCode);
+                    table.PrimaryKey("pk_urls", x => x.short_code);
                 });
         }
 
@@ -30,7 +30,7 @@ namespace DotnetApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Urls");
+                name: "urls");
         }
     }
 }

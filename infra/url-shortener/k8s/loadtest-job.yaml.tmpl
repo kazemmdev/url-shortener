@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: k6-${RUN_ID}
+  name: k6-${TARGET_SERVICE}-${RUN_ID}
   namespace: url-shortener
-  labels: { app: k6-loadtest }
+  labels: { app: k6-loadtest, target: "${TARGET_SERVICE}" }
 spec:
   backoffLimit: 0
   ttlSecondsAfterFinished: 3600
@@ -18,7 +18,7 @@ spec:
           args: ["run", "/scripts/url-shortener.js"]
           env:
             - name: BASE_URL
-              value: "http://api:8080"
+              value: "http://${TARGET_SERVICE}:8080"
             - name: PROFILE
               value: "${PROFILE}"
             - name: TARGET_RPS
