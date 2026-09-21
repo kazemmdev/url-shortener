@@ -1,4 +1,4 @@
-package main
+package shortcode
 
 import (
 	"crypto/rand"
@@ -11,14 +11,14 @@ import (
 // digits, then base62-encode — so a decoded short code can't be walked
 // sequentially to enumerate other links.
 const (
-	alphabet        = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	shortCodeLength = 7
-	paddedLength    = 9
-	salt            = 123
+	alphabet  = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	Length    = 7
+	paddedLen = 9
+	salt      = 123
 )
 
-func generateShortCode(counter int64) (string, error) {
-	padded := fmt.Sprintf("%0*d", paddedLength, counter+salt)
+func Generate(counter int64) (string, error) {
+	padded := fmt.Sprintf("%0*d", paddedLen, counter+salt)
 
 	shuffled, err := shuffle(padded)
 	if err != nil {
@@ -47,8 +47,8 @@ func shuffle(s string) (string, error) {
 }
 
 func toBase62(value int64) string {
-	buf := make([]byte, shortCodeLength)
-	pos := shortCodeLength
+	buf := make([]byte, Length)
+	pos := Length
 
 	for value > 0 {
 		pos--

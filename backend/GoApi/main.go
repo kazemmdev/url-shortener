@@ -2,83 +2,64 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
+	"os/signal"
+	"syscall"
 	"time"
 
-	_ "github.com/microsoft/go-mssqldb"
 	"github.com/redis/go-redis/v9"
+
+	"goapi/internal/cache"
+	"goapi/internal/config"
+	"goapi/internal/handler"
+	"goapi/internal/store"
 )
 
-func env(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func envInt(key string, fallback int) int {
-	if v := os.Getenv(key); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			return n
-		}
-	}
-	return fallback
-}
-
 func main() {
-	httpPort := env("HTTP_PORT", "8080")
-	sqlHost := env("SQLSERVER_HOST", "sqlserver")
-	sqlPort := env("SQLSERVER_PORT", "1433")
-	sqlUser := env("SQLSERVER_USER", "sa")
-	sqlPassword := os.Getenv("SQLSERVER_PASSWORD")
-	sqlDatabase := env("SQLSERVER_DATABASE", "UrlShortener")
-	redisAddr := env("REDIS_ADDR", "redis:6379")
-	expireDays := envInt("EXPIRE_DAYS", 30)
+	cfg := config.Load()
 
-	dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s&TrustServerCertificate=true",
-		sqlUser, sqlPassword, sqlHost, sqlPort, sqlDatabase)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	db, err := sql.Open("sqlserver", dsn)
+	setupCtx, cancelSetup := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelSetup()
+
+	db, err := store.Open(setupCtx, cfg.SQLServerDSN)
 	if err != nil {
-		log.Fatalf("open db: %v", err)
+		log.Fatalf("%v", err)
 	}
 	defer db.Close()
 
-	// database/sql defaults to unlimited open connections but only 2 kept
-	// idle, so under concurrent load it was opening a fresh TCP+auth
-	// connection to SQL Server per request instead of reusing a pool. Cap it
-	// at 100, matching ADO.NET SqlClient's default Max Pool Size, so this
-	// isn't an artificially different limit from the .NET side.
-	db.SetMaxOpenConns(100)
-	db.SetMaxIdleConns(100)
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("ping db: %v", err)
-	}
-	if err := bootstrapSchema(ctx, db); err != nil {
+	st := store.New(db, cfg.ExpireDays)
+	if err := st.Bootstrap(setupCtx); err != nil {
 		log.Fatalf("bootstrap schema: %v", err)
 	}
 
-	cache := redis.NewClient(&redis.Options{Addr: redisAddr})
-	if err := cache.Ping(ctx).Err(); err != nil {
+	redisClient := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
+	defer redisClient.Close()
+	if err := redisClient.Ping(setupCtx).Err(); err != nil {
 		log.Fatalf("ping redis: %v", err)
 	}
-	defer cache.Close()
 
-	s := &server{db: db, cache: cache, expireDays: expireDays}
+	srv := handler.New(st, cache.New(redisClient))
+	httpServer := &http.Server{
+		Addr:    ":" + cfg.HTTPPort,
+		Handler: srv.Routes(),
+	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/url", s.handleCreate)
-	mux.HandleFunc("GET /api/url/{shortCode}", s.handleRedirect)
+	go func() {
+		<-ctx.Done()
+		log.Println("shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			log.Printf("shutdown: %v", err)
+		}
+	}()
 
-	log.Printf("listening on :%s", httpPort)
-	log.Fatal(http.ListenAndServe(":"+httpPort, mux))
+	log.Printf("listening on :%s", cfg.HTTPPort)
+	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen: %v", err)
+	}
 }
